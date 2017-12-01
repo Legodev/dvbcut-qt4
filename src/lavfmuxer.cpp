@@ -40,7 +40,7 @@ extern "C" {
 	#define CODEC_TYPE_AUDIO AVMEDIA_TYPE_AUDIO
 
 #if LIBAVCODEC_VERSION_INT < ((55<<16)+(45<<8)+101)
-	#define av_frame_alloc avcodec_alloc_frame
+	#define av_frame_alloc av_frame_alloc
 	#define av_frame_free avcodec_free_frame
 #endif
 
@@ -152,7 +152,7 @@ lavfmuxer::lavfmuxer(const char *format, uint32_t audiostreammask, mpgfile &mpg,
 #endif
       s->codec->codec_type=CODEC_TYPE_AUDIO;
       s->codec->codec_id = (mpg.getstreamtype(astr)==streamtype::ac3audio) ?
-	CODEC_ID_AC3 : CODEC_ID_MP2;
+	AV_CODEC_ID_AC3 : AV_CODEC_ID_MP2;
       s->codec->rc_buffer_size = 224*1024*8;
 
       // Must read some packets to get codec parameters

@@ -289,9 +289,9 @@ void mpgfile::initcodeccontexts(int vid)
 #else
     S->avcc->codec_type=AVMEDIA_TYPE_VIDEO;
 #endif
-    S->avcc->codec_id=CODEC_ID_MPEG2VIDEO;
-    S->dec=avcodec_find_decoder(CODEC_ID_MPEG2VIDEO);
-    S->enc=avcodec_find_encoder(CODEC_ID_MPEG2VIDEO);
+    S->avcc->codec_id=AV_CODEC_ID_MPEG2VIDEO;
+    S->dec=avcodec_find_decoder(AV_CODEC_ID_MPEG2VIDEO);
+    S->enc=avcodec_find_encoder(AV_CODEC_ID_MPEG2VIDEO);
     S->type=streamtype::mpeg2video;
     }
 
@@ -780,7 +780,7 @@ void mpgfile::recodevideo(muxer &mux, int start, int stop, pts_t offset,int save
   pts_t startpts=idx[idx.indexnr(start)].getpts();
   while (outpicture<stop)
   {
-    u_int8_t *buf=(u_int8_t*)m2v.writeptr();
+    AVPacket *buf=(AVPacket*)m2v.writeptr();
     int out;
 
     if (!framelist.empty())
@@ -796,8 +796,8 @@ void mpgfile::recodevideo(muxer &mux, int start, int stop, pts_t offset,int save
       f->pict_type=(p==0)?FF_I_TYPE:FF_P_TYPE;
 #endif
 
-      out = avcodec_encode_video(avcc, buf,
-                                 m2v.getsize(), f);
+      out = avcodec_encode_video2(avcc, buf,
+                                 (const AVFrame*) m2v.getsize(), (int *) (void *) f);
 
       delete framelist.front();
       framelist.pop_front();
@@ -808,9 +808,9 @@ void mpgfile::recodevideo(muxer &mux, int start, int stop, pts_t offset,int save
     }
     else
     {
-      fprintf(stderr,"trying to call avcodec_encode_video with frame=0\n");
-      out = avcodec_encode_video(avcc, buf,
-                                 m2v.getsize(), 0);
+      fprintf(stderr,"trying to call avcodec_encode_video2 with frame=0\n");
+      out = avcodec_encode_video2(avcc, buf,
+                                 (const AVFrame*) m2v.getsize(), (int*) 0);
       fprintf(stderr,"...back I am.\n");
 
       if (out<=0)
@@ -820,7 +820,7 @@ void mpgfile::recodevideo(muxer &mux, int start, int stop, pts_t offset,int save
     pts_t vidpts=idx[idx.indexnr(outpicture)].getpts()-offset;
     pts_t viddts=mux.getdts(VIDEOSTREAM);
     mux.setdts(VIDEOSTREAM,vidpts);
-    fixtimecode(buf,out,vidpts);
+    fixtimecode((uint8_t*)buf,out,vidpts);
     mux.putpacket(VIDEOSTREAM,buf,out,vidpts,viddts,
                   (avcc->coded_frame && avcc->coded_frame->key_frame)?MUXER_FLAG_KEY:0 );
     ++outpicture;
